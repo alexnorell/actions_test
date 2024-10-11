@@ -1,0 +1,26 @@
+name: Main Check
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Type "prod" to confirm deployment to production'
+        required: true
+        default: ""
+jobs:
+  check_if_branch_is_ahead_of_master:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.environment == 'prod' }}
+    steps:
+      - name: Check if branch is ahead of main
+        run: |
+          OUTDATED_STATE="$(gh api \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            '/repos/${{ github.repository }}/compare/${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}' \
+            --jq '.status | select(. | IN("identical", "ahead") | not)' \
+          )";
+
+          if [ "${OUTDATED_STATE}" ]; then
+            echo "This branch is not up to date with the main"
+            exit 1
+          fi
