@@ -10,6 +10,8 @@ jobs:
   check_if_branch_is_ahead_of_master:
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.environment == 'prod' }}
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Check if branch is ahead of main
         run: |
