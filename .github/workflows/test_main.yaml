@@ -1,4 +1,5 @@
 name: Main Check
+
 on:
   workflow_dispatch:
     inputs:
@@ -6,23 +7,46 @@ on:
         description: 'Type "prod" to confirm deployment to production'
         required: true
         default: ""
+
 jobs:
-  check_if_branch_is_ahead_of_master:
+  check_if_branch_is_ahead_of_main:
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.environment == 'prod' }}
     env:
-      GH_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Check if branch is ahead of main
-        run: |
-          OUTDATED_STATE="$(gh api \
-            --header "Accept: application/vnd.github+json" \
-            --header "X-GitHub-Api-Version: 2022-11-28" \
-            '/repos/${{ github.repository }}/compare/${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}' \
-            --jq '.status | select(. | IN("identical", "ahead") | not)' \
-          )";
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-          if [ "${OUTDATED_STATE}" ]; then
-            echo "This branch is not up to date with the main"
+      - name: Get current branch name
+        id: vars
+        run: |
+          echo "HEAD_BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Check if branch is ahead of main
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BASE_BRANCH="main"
+          HEAD_BRANCH="${{ env.HEAD_BRANCH }}"
+
+          echo "Comparing '${HEAD_BRANCH}' with '${BASE_BRANCH}'"
+
+          # Fetch the latest commits for both branches
+          git fetch origin ${BASE_BRANCH}:${BASE_BRANCH}
+          git fetch origin ${HEAD_BRANCH}:${HEAD_BRANCH}
+
+          # Use the GitHub CLI to compare branches
+          OUTDATED_STATE=$(gh api \
+            --header "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/compare/${BASE_BRANCH}...${HEAD_BRANCH}" \
+            --jq '.status | select(. | in("identical", "ahead") | not)')
+
+          if [ -n "${OUTDATED_STATE}" ]; then
+            echo "Error: The branch '${HEAD_BRANCH}' is not up to date with '${BASE_BRANCH}'."
             exit 1
+          else
+            echo "Success: The branch '${HEAD_BRANCH}' is up to date with '${BASE_BRANCH}' or ahead."
           fi
