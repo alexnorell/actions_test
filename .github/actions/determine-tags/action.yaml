@@ -18,6 +18,18 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Get the latest release
+      shell: bash
+      id: latest_release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        LATEST_RELEASE=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+          "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name')
+
+        echo "Latest release: $LATEST_RELEASE"
+        echo "latest_release=$LATEST_RELEASE" >> $GITHUB_ENV
+
     - name: Determine Image Tags
       shell: bash
       id: image_tags
@@ -26,9 +38,10 @@ runs:
         CUSTOM_TAG="${{ inputs.custom_tag }}"
         VERSION="${{ inputs.version }}"
         BASE_IMAGE="${{ inputs.base_image }}"
-        BRANCH="${{ github.ref_name }}"
+        BRANCH="${{ github.event.release.target_commitish }}"
         EVENT_NAME="${{ github.event_name }}"
-        TARGET_BRANCH="${{ github.event.release.target_commitish }}"
+        TAG_NAME="${{ github.ref_name }}"
+        LATEST_RELEASE="${{ env.latest_release }}"
 
         # Determine the tags
         if [ -n "$CUSTOM_TAG" ]; then
@@ -43,8 +56,8 @@ runs:
             IMAGE_TAGS="$IMAGE_TAGS,$MAIN_TAG"
           fi
 
-          # Add latest tag if it's a release event on the main branch
-          if [ "$EVENT_NAME" == "release" ] && [ "$TARGET_BRANCH" == "main" ]; then
+          # Add latest tag if this is the latest release
+          if [ "$EVENT_NAME" == "release" ] && [ "$TAG_NAME" == "$LATEST_RELEASE" ]; then
             LATEST_TAG="$BASE_IMAGE:latest"
             IMAGE_TAGS="$IMAGE_TAGS,$LATEST_TAG"
           fi
