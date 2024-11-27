@@ -16,7 +16,7 @@ on:
         default: ""
       force_push:
         type: boolean
-        description: Update latest release images?
+        description: Update the release image?
         default: false
 
 permissions:
