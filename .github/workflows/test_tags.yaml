@@ -22,7 +22,8 @@ jobs:
           echo "BASE_IMAGE=example/test-image" >> $GITHUB_ENV
 
       - name: Run Determine Image Tags action
-        uses: ./  # This assumes the composite action is in the same repository
+        uses: ./.github/actions/determine-tags
+        id: image_tags
         with:
           custom_tag: ""
           version: ${{ env.VERSION }}
