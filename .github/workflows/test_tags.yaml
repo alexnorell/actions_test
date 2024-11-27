@@ -38,7 +38,7 @@ jobs:
         uses: ./.github/actions/determine-tags
         id: image_tags
         with:
-          custom_tag: ${{ github.event.inputs.custom_tag || "" }}
+          custom_tag: ${{ github.event.inputs.custom_tag || \"\" }}
           version: ${{ env.VERSION }}
           base_image: ${{ env.BASE_IMAGE }}
           token: ${{ secrets.GITHUB_TOKEN }}
