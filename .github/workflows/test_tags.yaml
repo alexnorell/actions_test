@@ -29,7 +29,7 @@ jobs:
         uses: ./.github/actions/determine-tags
         id: image_tags
         with:
-          custom_tag: ""
+          custom_tag: "test"
           version: ${{ env.VERSION }}
           base_image: ${{ env.BASE_IMAGE }}
           token: ${{ secrets.GITHUB_TOKEN }}
