@@ -59,6 +59,10 @@ runs:
           echo "Triggered automatically via $EVENT_NAME"
           # Fetch the latest release tag for release events
           if [ "$EVENT_NAME" == "release" ]; then
+            RELEASE=BRANCH
+            NORMALIZED_RELEASE=$(echo $RELEASE | sed 's/^v//')
+            echo "Normalized release: $NORMALIZED_RELEASE"
+
             LATEST_RELEASE=$(curl -s -H "Authorization: Bearer $TOKEN" \
               "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name')
             echo "Fetched latest release: $LATEST_RELEASE"
@@ -68,6 +72,7 @@ runs:
             echo "Normalized latest release: $NORMALIZED_LATEST_RELEASE"
           else
             LATEST_RELEASE=""
+            NORMALIZED_RELEASE=""
             NORMALIZED_LATEST_RELEASE=""
           fi
 
@@ -78,9 +83,13 @@ runs:
 
           # Logic for release events
           if [ "$EVENT_NAME" == "release" ]; then
-            IMAGE_TAGS="$BASE_IMAGE:$VERSION"
-            if [ "$VERSION" == "$NORMALIZED_LATEST_RELEASE" ]; then
-              IMAGE_TAGS="$IMAGE_TAGS,$BASE_IMAGE:latest"
+            if [ "$VERSION" == "$NORMALIZED_RELEASE" ]; then
+              IMAGE_TAGS="$BASE_IMAGE:$VERSION"
+              if [ "$NORMALIZED_RELEASE" == "$NORMALIZED_LATEST_RELEASE" ]; then
+                IMAGE_TAGS="$IMAGE_TAGS,$BASE_IMAGE:latest"
+              fi
+            else
+              echo "Version: $VERSION does not match release: $NORMALIZED_RELEASE"
             fi
           fi
         fi
@@ -90,6 +99,11 @@ runs:
 
         # Echo the computed tags
         echo "Computed image tags: $IMAGE_TAGS"
+
+        if [ -n $IMAGE_TAGS ]; then
+          echo "No valid image tags found."
+          exit 1
+        fi
 
         # Export the tags to outputs
         echo "image_tags=$IMAGE_TAGS" >> $GITHUB_OUTPUT
