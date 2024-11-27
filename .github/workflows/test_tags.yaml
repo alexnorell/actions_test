@@ -1,0 +1,33 @@
+name: Test Determine Image Tags
+
+on:
+  push:
+    branches:
+      - main
+      - feature/*
+  release:
+    types:
+      - created
+
+jobs:
+  test-determine-image-tags:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up test inputs
+        run: |
+          echo "VERSION=1.2.3" >> $GITHUB_ENV
+          echo "BASE_IMAGE=example/test-image" >> $GITHUB_ENV
+
+      - name: Run Determine Image Tags action
+        uses: ./  # This assumes the composite action is in the same repository
+        with:
+          custom_tag: ""
+          version: ${{ env.VERSION }}
+          base_image: ${{ env.BASE_IMAGE }}
+
+      - name: Display computed image tags
+        run: |
+          echo "Computed tags: ${{ steps.image_tags.outputs.image_tags }}"
