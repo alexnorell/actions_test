@@ -9,6 +9,9 @@ on:
     types:
       - created
 
+permissions:
+  contents: read
+
 jobs:
   test-determine-image-tags:
     runs-on: ubuntu-latest
