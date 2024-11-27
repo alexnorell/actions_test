@@ -11,6 +11,9 @@ inputs:
   base_image:
     description: "Base image name for the Docker tags (e.g., 'roboflow/roboflow-inference-server-gpu')"
     required: true
+  token:
+    description: "GitHub token for accessing repository data"
+    required: true
 outputs:
   image_tags:
     description: "Comma-separated list of Docker image tags"
@@ -18,18 +21,6 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Get the latest release
-      shell: bash
-      id: latest_release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        LATEST_RELEASE=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-          "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name')
-
-        echo "Latest release: $LATEST_RELEASE"
-        echo "latest_release=$LATEST_RELEASE" >> $GITHUB_ENV
-
     - name: Determine Image Tags
       shell: bash
       id: image_tags
@@ -38,10 +29,19 @@ runs:
         CUSTOM_TAG="${{ inputs.custom_tag }}"
         VERSION="${{ inputs.version }}"
         BASE_IMAGE="${{ inputs.base_image }}"
-        BRANCH="${{ github.event.release.target_commitish }}"
+        TOKEN="${{ inputs.token }}"
+        BRANCH="${{ github.ref_name }}"
         EVENT_NAME="${{ github.event_name }}"
-        TAG_NAME="${{ github.ref_name }}"
-        LATEST_RELEASE="${{ env.latest_release }}"
+        TARGET_BRANCH="${{ github.event.release.target_commitish }}"
+
+        # Fetch the latest release tag
+        if [ "$EVENT_NAME" == "release" ]; then
+          LATEST_RELEASE=$(curl -s -H "Authorization: Bearer $TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name')
+          echo "Latest release: $LATEST_RELEASE"
+        else
+          LATEST_RELEASE=""
+        fi
 
         # Determine the tags
         if [ -n "$CUSTOM_TAG" ]; then
@@ -56,8 +56,8 @@ runs:
             IMAGE_TAGS="$IMAGE_TAGS,$MAIN_TAG"
           fi
 
-          # Add latest tag if this is the latest release
-          if [ "$EVENT_NAME" == "release" ] && [ "$TAG_NAME" == "$LATEST_RELEASE" ]; then
+          # Add latest tag if it's a release event and this is the latest release
+          if [ "$EVENT_NAME" == "release" ] && [ "$TARGET_BRANCH" == "main" ] && [ "$VERSION" == "$LATEST_RELEASE" ]; then
             LATEST_TAG="$BASE_IMAGE:latest"
             IMAGE_TAGS="$IMAGE_TAGS,$LATEST_TAG"
           fi

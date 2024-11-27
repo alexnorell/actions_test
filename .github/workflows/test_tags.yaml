@@ -31,6 +31,7 @@ jobs:
           custom_tag: ""
           version: ${{ env.VERSION }}
           base_image: ${{ env.BASE_IMAGE }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Display computed image tags
         run: |
