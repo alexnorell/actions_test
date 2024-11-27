@@ -74,6 +74,15 @@ runs:
           fi
         fi
 
+        # Handle custom tag (prepend with version)
+        if [ -n "$CUSTOM_TAG" ]; then
+          CUSTOM_TAG="$VERSION-$CUSTOM_TAG"
+          IMAGE_TAGS="$IMAGE_TAGS,$BASE_IMAGE:$CUSTOM_TAG"
+        fi
+
+        # Clean up leading/trailing commas
+        IMAGE_TAGS=$(echo "$IMAGE_TAGS" | sed 's/^,//;s/,$//')
+
         # Echo the computed tags
         echo "Computed image tags: $IMAGE_TAGS"
 
