@@ -59,7 +59,7 @@ runs:
           echo "Triggered automatically via $EVENT_NAME"
           # Fetch the latest release tag for release events
           if [ "$EVENT_NAME" == "release" ]; then
-            RELEASE=BRANCH
+            RELEASE=$BRANCH
             NORMALIZED_RELEASE=$(echo $RELEASE | sed 's/^v//')
             echo "Normalized release: $NORMALIZED_RELEASE"
 
