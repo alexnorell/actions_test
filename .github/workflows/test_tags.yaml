@@ -13,7 +13,7 @@ on:
       custom_tag:
         description: "Custom tag to use for the Docker image"
         required: false
-        default: "test"
+        default: ""
       force_push:
         type: boolean
         description: Update latest release images?
