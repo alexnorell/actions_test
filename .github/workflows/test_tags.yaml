@@ -15,9 +15,9 @@ on:
         required: false
         default: "test"
       force_push:
-        description: "Force push the release tag (true/false)"
-        required: false
-        default: "false"
+        type: boolean
+        description: Update latest release images?
+        default: false
 
 permissions:
   contents: read
