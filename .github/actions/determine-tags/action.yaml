@@ -14,6 +14,10 @@ inputs:
   token:
     description: "GitHub token for accessing repository data"
     required: true
+  force_push:
+    description: "Force push the release tag (only outputs the version tag)"
+    required: false
+    default: "false"
 outputs:
   image_tags:
     description: "Comma-separated list of Docker image tags"
@@ -30,6 +34,7 @@ runs:
         VERSION="${{ inputs.version }}"
         BASE_IMAGE="${{ inputs.base_image }}"
         TOKEN="${{ inputs.token }}"
+        FORCE_PUSH="${{ inputs.force_push }}"
         BRANCH="${{ github.ref_name }}"
         EVENT_NAME="${{ github.event_name }}"
         TARGET_BRANCH="${{ github.event.release.target_commitish }}"
@@ -48,25 +53,24 @@ runs:
           NORMALIZED_LATEST_RELEASE=""
         fi
 
-        # Determine the tags
-        if [ -n "$CUSTOM_TAG" ]; then
-          # Prepend the version to the custom tag
-          CUSTOM_TAG="$VERSION-$CUSTOM_TAG"
-          IMAGE_TAGS="$BASE_IMAGE:$CUSTOM_TAG"
-        else
-          VERSION_TAG="$BASE_IMAGE:$VERSION"
-          IMAGE_TAGS="$VERSION_TAG"
+        # Initialize the tags
+        IMAGE_TAGS=""
 
-          # Always update 'main' tag for commits on main
-          if [ "$BRANCH" == "main" ] && [ "$EVENT_NAME" == "push" ]; then
-            MAIN_TAG="$BASE_IMAGE:main"
-            IMAGE_TAGS="$IMAGE_TAGS,$MAIN_TAG"
+        # Logic for force_push
+        if [ "$FORCE_PUSH" == "true" ]; then
+          IMAGE_TAGS="$BASE_IMAGE:$VERSION"
+        else
+          # Logic for push events to main
+          if [ "$EVENT_NAME" == "push" ] && [ "$BRANCH" == "main" ]; then
+            IMAGE_TAGS="$BASE_IMAGE:main"
           fi
 
-          # Add latest tag if it's a release event and this is the latest release
-          if [ "$EVENT_NAME" == "release" ] && [ "$TARGET_BRANCH" == "main" ] && [ "$VERSION" == "$NORMALIZED_LATEST_RELEASE" ]; then
-            LATEST_TAG="$BASE_IMAGE:latest"
-            IMAGE_TAGS="$IMAGE_TAGS,$LATEST_TAG"
+          # Logic for release events
+          if [ "$EVENT_NAME" == "release" ]; then
+            IMAGE_TAGS="$BASE_IMAGE:$VERSION"
+            if [ "$VERSION" == "$NORMALIZED_LATEST_RELEASE" ]; then
+              IMAGE_TAGS="$IMAGE_TAGS,$BASE_IMAGE:latest"
+            fi
           fi
         fi
 
