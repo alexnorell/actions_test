@@ -8,6 +8,16 @@ on:
   release:
     types:
       - created
+  workflow_dispatch:
+    inputs:
+      custom_tag:
+        description: "Custom tag to use for the Docker image"
+        required: false
+        default: "test"
+      force_push:
+        description: "Force push the release tag (true/false)"
+        required: false
+        default: "false"
 
 permissions:
   contents: read
@@ -17,23 +27,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up test inputs
         run: |
-          echo "VERSION=0.0.5" >> $GITHUB_ENV
+          echo "VERSION=0.0.6" >> $GITHUB_ENV
           echo "BASE_IMAGE=example/test-image" >> $GITHUB_ENV
-          echo "FORCE_PUSH=false" >> $GITHUB_ENV
 
       - name: Run Determine Image Tags action
         uses: ./.github/actions/determine-tags
         id: image_tags
         with:
-          custom_tag: "test"
+          custom_tag: ${{ github.event.inputs.custom_tag || "" }}
           version: ${{ env.VERSION }}
           base_image: ${{ env.BASE_IMAGE }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          force_push: ${{ env.FORCE_PUSH }}
+          force_push: ${{ github.event.inputs.force_push || "false" }}
 
       - name: Display computed image tags
         run: |
