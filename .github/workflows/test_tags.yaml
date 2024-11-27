@@ -23,7 +23,7 @@ jobs:
         run: |
           echo "VERSION=0.0.5" >> $GITHUB_ENV
           echo "BASE_IMAGE=example/test-image" >> $GITHUB_ENV
-          echo "FORCE_PUSH=true" >> $GITHUB_ENV
+          echo "FORCE_PUSH=false" >> $GITHUB_ENV
 
       - name: Run Determine Image Tags action
         uses: ./.github/actions/determine-tags
