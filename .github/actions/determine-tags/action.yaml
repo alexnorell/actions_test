@@ -100,7 +100,7 @@ runs:
         # Echo the computed tags
         echo "Computed image tags: $IMAGE_TAGS"
 
-        if [ -n $IMAGE_TAGS ]; then
+        if [ -z $IMAGE_TAGS ]; then
           echo "No valid image tags found."
           exit 1
         fi
