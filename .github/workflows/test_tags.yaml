@@ -21,7 +21,7 @@ jobs:
 
       - name: Set up test inputs
         run: |
-          echo "VERSION=1.2.3" >> $GITHUB_ENV
+          echo "VERSION=v0.0.5" >> $GITHUB_ENV
           echo "BASE_IMAGE=example/test-image" >> $GITHUB_ENV
 
       - name: Run Determine Image Tags action
