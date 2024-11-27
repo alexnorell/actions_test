@@ -6,7 +6,7 @@ inputs:
     required: false
     default: ""
   version:
-    description: "Version of the image"
+    description: "Version of the image (e.g., 0.0.5, without the 'v')"
     required: true
   base_image:
     description: "Base image name for the Docker tags (e.g., 'roboflow/roboflow-inference-server-gpu')"
@@ -38,13 +38,20 @@ runs:
         if [ "$EVENT_NAME" == "release" ]; then
           LATEST_RELEASE=$(curl -s -H "Authorization: Bearer $TOKEN" \
             "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name')
-          echo "Latest release: $LATEST_RELEASE"
+          echo "Fetched latest release: $LATEST_RELEASE"
+
+          # Normalize versions: remove 'v' from the latest release tag
+          NORMALIZED_LATEST_RELEASE=$(echo "$LATEST_RELEASE" | sed 's/^v//')
+          echo "Normalized latest release: $NORMALIZED_LATEST_RELEASE"
         else
           LATEST_RELEASE=""
+          NORMALIZED_LATEST_RELEASE=""
         fi
 
         # Determine the tags
         if [ -n "$CUSTOM_TAG" ]; then
+          # Prepend the version to the custom tag
+          CUSTOM_TAG="$VERSION-$CUSTOM_TAG"
           IMAGE_TAGS="$BASE_IMAGE:$CUSTOM_TAG"
         else
           VERSION_TAG="$BASE_IMAGE:$VERSION"
@@ -57,7 +64,7 @@ runs:
           fi
 
           # Add latest tag if it's a release event and this is the latest release
-          if [ "$EVENT_NAME" == "release" ] && [ "$TARGET_BRANCH" == "main" ] && [ "$VERSION" == "$LATEST_RELEASE" ]; then
+          if [ "$EVENT_NAME" == "release" ] && [ "$TARGET_BRANCH" == "main" ] && [ "$VERSION" == "$NORMALIZED_LATEST_RELEASE" ]; then
             LATEST_TAG="$BASE_IMAGE:latest"
             IMAGE_TAGS="$IMAGE_TAGS,$LATEST_TAG"
           fi
