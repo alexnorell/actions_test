@@ -39,27 +39,38 @@ runs:
         EVENT_NAME="${{ github.event_name }}"
         TARGET_BRANCH="${{ github.event.release.target_commitish }}"
 
-        # Fetch the latest release tag
-        if [ "$EVENT_NAME" == "release" ]; then
-          LATEST_RELEASE=$(curl -s -H "Authorization: Bearer $TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name')
-          echo "Fetched latest release: $LATEST_RELEASE"
-
-          # Normalize versions: remove 'v' from the latest release tag
-          NORMALIZED_LATEST_RELEASE=$(echo "$LATEST_RELEASE" | sed 's/^v//')
-          echo "Normalized latest release: $NORMALIZED_LATEST_RELEASE"
-        else
-          LATEST_RELEASE=""
-          NORMALIZED_LATEST_RELEASE=""
-        fi
-
         # Initialize the tags
         IMAGE_TAGS=""
 
-        # Logic for force_push
-        if [ "$FORCE_PUSH" == "true" ]; then
-          IMAGE_TAGS="$BASE_IMAGE:$VERSION"
+        # Workflow Dispatch Logic
+        if [ "$EVENT_NAME" == "workflow_dispatch" ]; then
+          echo "Triggered manually via workflow_dispatch"
+          if [ -n "$CUSTOM_TAG" ]; then
+            echo "Custom tag set, force push ignored."
+            CUSTOM_TAG="$VERSION-$CUSTOM_TAG"
+            IMAGE_TAGS="$BASE_IMAGE:$CUSTOM_TAG"
+          else
+            echo "Force push set or defaulting to version tag."
+            IMAGE_TAGS="$BASE_IMAGE:$VERSION"
+          fi
+
+        # Automatic Trigger Logic
         else
+          echo "Triggered automatically via $EVENT_NAME"
+          # Fetch the latest release tag for release events
+          if [ "$EVENT_NAME" == "release" ]; then
+            LATEST_RELEASE=$(curl -s -H "Authorization: Bearer $TOKEN" \
+              "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name')
+            echo "Fetched latest release: $LATEST_RELEASE"
+
+            # Normalize versions: remove 'v' from the latest release tag
+            NORMALIZED_LATEST_RELEASE=$(echo "$LATEST_RELEASE" | sed 's/^v//')
+            echo "Normalized latest release: $NORMALIZED_LATEST_RELEASE"
+          else
+            LATEST_RELEASE=""
+            NORMALIZED_LATEST_RELEASE=""
+          fi
+
           # Logic for push events to main
           if [ "$EVENT_NAME" == "push" ] && [ "$BRANCH" == "main" ]; then
             IMAGE_TAGS="$BASE_IMAGE:main"
@@ -72,12 +83,6 @@ runs:
               IMAGE_TAGS="$IMAGE_TAGS,$BASE_IMAGE:latest"
             fi
           fi
-        fi
-
-        # Handle custom tag (prepend with version)
-        if [ -n "$CUSTOM_TAG" ]; then
-          CUSTOM_TAG="$VERSION-$CUSTOM_TAG"
-          IMAGE_TAGS="$IMAGE_TAGS,$BASE_IMAGE:$CUSTOM_TAG"
         fi
 
         # Clean up leading/trailing commas
