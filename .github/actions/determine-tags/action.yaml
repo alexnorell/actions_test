@@ -60,7 +60,7 @@ runs:
           # Fetch the latest release tag for release events
           if [ "$EVENT_NAME" == "release" ]; then
             RELEASE=$BRANCH
-            NORMALIZED_RELEASE=$(echo $RELEASE | sed 's/^v//')
+            NORMALIZED_RELEASE=$(echo $RELEASE | grep -Eo '^v?[0-9]+\.[0-9]+\.[0-9]+$' | sed 's/^v//')
             echo "Normalized release: $NORMALIZED_RELEASE"
 
             LATEST_RELEASE=$(curl -s -H "Authorization: Bearer $TOKEN" \
@@ -83,13 +83,9 @@ runs:
 
           # Logic for release events
           if [ "$EVENT_NAME" == "release" ]; then
-            if [ "$VERSION" == "$NORMALIZED_RELEASE" ]; then
-              IMAGE_TAGS="$BASE_IMAGE:$VERSION"
-              if [ "$NORMALIZED_RELEASE" == "$NORMALIZED_LATEST_RELEASE" ]; then
-                IMAGE_TAGS="$IMAGE_TAGS,$BASE_IMAGE:latest"
-              fi
-            else
-              echo "Version: $VERSION does not match release: $NORMALIZED_RELEASE"
+            IMAGE_TAGS="$BASE_IMAGE:$NORMALIZED_RELEASE"
+            if [ "$VERSION" == "$NORMALIZED_RELEASE" ] && [ "$NORMALIZED_RELEASE" == "$NORMALIZED_LATEST_RELEASE" ]; then
+              IMAGE_TAGS="$IMAGE_TAGS,$BASE_IMAGE:latest"
             fi
           fi
         fi
