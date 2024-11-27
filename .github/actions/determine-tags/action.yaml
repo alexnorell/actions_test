@@ -28,6 +28,7 @@ runs:
         BASE_IMAGE="${{ inputs.base_image }}"
         BRANCH="${{ github.ref_name }}"
         EVENT_NAME="${{ github.event_name }}"
+        TARGET_BRANCH="${{ github.event.release.target_commitish }}"
 
         # Determine the tags
         if [ -n "$CUSTOM_TAG" ]; then
@@ -36,14 +37,14 @@ runs:
           VERSION_TAG="$BASE_IMAGE:$VERSION"
           IMAGE_TAGS="$VERSION_TAG"
 
-          # Add tags for main branch or release events
-          if [ "$BRANCH" == "main" ]; then
+          # Always update 'main' tag for commits on main
+          if [ "$BRANCH" == "main" ] && [ "$EVENT_NAME" == "push" ]; then
             MAIN_TAG="$BASE_IMAGE:main"
             IMAGE_TAGS="$IMAGE_TAGS,$MAIN_TAG"
           fi
 
           # Add latest tag if it's a release event on the main branch
-          if [ "$EVENT_NAME" == "release" ] && [ "$BRANCH" == "main" ]; then
+          if [ "$EVENT_NAME" == "release" ] && [ "$TARGET_BRANCH" == "main" ]; then
             LATEST_TAG="$BASE_IMAGE:latest"
             IMAGE_TAGS="$IMAGE_TAGS,$LATEST_TAG"
           fi
